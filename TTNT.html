@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Dự báo thời tiết Bayes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="TTNT.css">
+</head>
+<body>
+  <div class="box">
+    <div class="title">Dự báo thời tiết bằng Bayes</div>
+    <form id="weatherForm">
+      <div class="form-row">
+        <label>Nhiệt độ (°C):</label>
+        <input type="number" id="temp" min="0" max="50" required>
+      </div>
+      <div class="form-row">
+        <label>Độ ẩm (%):</label>
+        <input type="number" id="humidity" min="0" max="100" required>
+      </div>
+      <div class="form-row">
+        <label>Trời nắng?</label>
+        <select id="sunny">
+          <option value="1">Có</option>
+          <option value="0">Không</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Tốc độ gió (km/h):</label>
+        <input type="number" id="wind" min="0" max="100" required>
+      </div>
+      <button class="btn" type="submit">Dự báo</button>
+    </form>
+    <div class="result" id="result"></div>
+  </div>
+<script>
+document.getElementById('weatherForm').onsubmit = async function(e) {
+  e.preventDefault();
+  const temp = document.getElementById('temp').value;
+  const humidity = document.getElementById('humidity').value;
+  const sunny = document.getElementById('sunny').value;
+  const wind = document.getElementById('wind').value;
+  const resultDiv = document.getElementById('result');
+  resultDiv.textContent = "Đang dự báo...";
+  try {
+    const res = await fetch('http://localhost:5000/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        temperature: temp,
+        humidity: humidity,
+        sunny: sunny,
+        wind: wind
+      })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    resultDiv.innerHTML = (
+      (data.prediction === 1
+        ? "🌧️ <b>Có thể sẽ <span style='color:#2e5fa1'>mưa</span></b>!"
+        : "☀️ <b>Không mưa</b>, bạn có thể yên tâm ra ngoài!")
+      + `<br><span style="font-size:0.97rem;color:#666;">(Xác suất mưa: ${(data.probability.rain*100).toFixed(1)}%, không mưa: ${(data.probability.no_rain*100).toFixed(1)}%)</span>`
+    );
+  } catch(e) {
+    resultDiv.textContent = "Lỗi: " + e.message;
+  }
+};
+</script>
+</body>
+</html>
