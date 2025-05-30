@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dự báo thời tiết - Naive Bayes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1 class="main-title">☀️ Dự báo thời tiết bằng Naive Bayes ☔</h1>
+    <div class="weather-box">
+        <form id="weatherForm" autocomplete="off">
+            <div class="form-row">
+                <label for="temp">Nhiệt độ (°C):</label>
+                <input type="number" id="temp" min="0" max="50" required placeholder="Ví dụ: 30">
+            </div>
+            <div class="form-row">
+                <label for="humidity">Độ ẩm (%):</label>
+                <input type="number" id="humidity" min="0" max="100" required placeholder="Ví dụ: 70">
+            </div>
+            <div class="form-row">
+                <label for="pressure">Áp suất khí quyển (hPa):</label>
+                <input type="number" id="pressure" min="950" max="1050" required placeholder="Ví dụ: 1005">
+            </div>
+            <div class="form-row">
+                <label for="wind">Tốc độ gió (km/h):</label>
+                <input type="number" id="wind" min="0" max="100" required placeholder="Ví dụ: 15">
+            </div>
+            <button class="btn" type="submit">Dự báo ngay</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+    <footer>
+        <span>Dự án học máy &copy; 2025 | Nhóm 7</span>
+    </footer>
+</div>
+<script>
+document.getElementById('weatherForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const temp = document.getElementById('temp').value;
+    const humidity = document.getElementById('humidity').value;
+    const pressure = document.getElementById('pressure').value;
+    const wind = document.getElementById('wind').value;
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = "<div class='loading'>Đang dự báo...</div>";
+    try {
+        const res = await fetch('/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                temperature: temp,
+                humidity: humidity,
+                pressure: pressure,
+                wind: wind
+            })
+        });
+        const data = await res.json();
+        if(data.error) throw new Error(data.error);
+        resultDiv.innerHTML = (
+            (data.prediction === 1
+                ? "<div class='rainy'>🌧️ <b>Có thể <span>mưa</span></b>!</div>"
+                : "<div class='sunny'>☀️ <b>Không mưa</b>, bạn có thể yên tâm ra ngoài!</div>")
+            + `<div class="prob">Xác suất mưa: <b>${(data.probability.rain*100).toFixed(1)}%</b> &nbsp;|&nbsp; Không mưa: <b>${(data.probability.no_rain*100).toFixed(1)}%</b></div>`
+        );
+    } catch(e) {
+        resultDiv.innerHTML = `<div class="error">Lỗi: ${e.message}</div>`;
+    }
+};
+</script>
+</body>
+</html>
